@@ -1,3 +1,12 @@
+console.log('v1');
+
+
+let fireTruck = new Image();
+fireTruck.src = "/vehicles/firetruck.png";
+fireTruck.dx = -10;
+fireTruck.dy = -20;
+
+
 /*
  * Car Object
  */
@@ -7,9 +16,8 @@ function Car (x, y, alfa, color, maxVelocity, radius) {
 	this.alfa = alfa == null ? Math.PI / 2 : alfa;	// Angle
 	this.v = 0;					// Velocity
 	this.v0 = 0.5;				//
-
 	this.a = 1.025;				// Acceleration pixels/frame^2
-	this.maxVelocity = maxVelocity == null ? 4 : maxVelocity;	// Maximum velocity
+	this.maxVelocity = maxVelocity == null ? 2 : maxVelocity;	// Maximum velocity
 
 	this.color = color == null ? '#4A96AD' : color;	// Car's color
 	this.r = radius == null ? 10 : radius;			// Radius
@@ -20,6 +28,20 @@ function Car (x, y, alfa, color, maxVelocity, radius) {
 		c.beginPath();
 		c.arc(Math.round(x), Math.round(y), this.r, -1 * Math.PI / 2 - this.alfa, Math.PI / 2 - this.alfa);
 		c.fill();
+
+		//Save the context so that nothing already on the canvas is affected.
+		c.save();
+
+		//Move the canvas to where we want the car to appear
+		c.translate(Math.round(x),Math.round(y));
+		//Rotates the canvas underneath the car
+		c.rotate(-(this.alfa-Math.PI/2));
+
+		//Draw the canvas
+		c.drawImage(fireTruck,fireTruck.dx,fireTruck.dy);
+
+		//Restore the context so that the next set of changes can occur
+		c.restore();
 	}
 
 	this.reprShadow = function(c, x, y, alfa) {
@@ -218,14 +240,16 @@ function frame () {
 	} else if (show === 'menu') {
 		// Nothing to do here
 	} else if (show === '321') {
-		var diff = (new Date()).getTime() - countdown;
-		if (diff >= 3000) {
-			time = (new Date()).getTime();
-			lapTime = time;
+		show='game';
 
-			countdown = null;
-			show = 'game';
-		}
+		// var diff = (new Date()).getTime() - countdown;
+		// if (diff >= 3000) {
+		// 	time = (new Date()).getTime();
+		// 	lapTime = time;
+		//
+		// 	countdown = null;
+		// 	show = 'game';
+		// }
 	} else {
 		return;
 	}
