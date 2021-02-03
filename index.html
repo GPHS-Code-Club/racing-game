@@ -78,11 +78,18 @@
 						Lap times: <ol id="lapTimes" class="lapList"></ol>
 				</div>
 				<div class="border box">
-					Car: <select name="selectCar" onchange=""><option value="car1">Capsule</option></select><br>
+					Car: <select name="selectCar" onchange="selectCar();">
+							<option value="firetruck">Firetruck</option>
+							<option value="disk">Disk</option>
+						</select>
+					<br>
 					Track: <select name="selectTrack" onchange="selectTrack();"></select>
 				</div>
 				<div class="border box">
 					FPS: <span id="fps"></span>
+				</div>
+				<div class="border box">
+					<button onclick="addAIDriver();">Add AI Driver</button>
 				</div>
 			</div>
 			<div class="row center">
