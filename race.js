@@ -575,7 +575,13 @@ var tracks = [
             '1': [510, 540, 10, 200],
             '2': [480, 490, 400, 559]
         }),
-        new Track('Infinity', 'infinity', 1000, 600, 550, 250, null, infiniteTrack)
+        new Track('Infinity', 'infinity', 1000, 600, 550, 250, null, infiniteTrack),
+        new Track('Streets','streets',1500,800,545,80,300,null,null,{
+            'start': [790, 800, 5, 160],
+            '1': [850, 860, 5, 160],
+            '2': [900, 910, 5, 160]
+        })
+
     ],
     track, c, cNode, hiddenCanvas, trackImg,
     car = new Car(0, 0),
