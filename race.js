@@ -1,4 +1,4 @@
-console.log('v2');
+console.log('v4');
 
 
 let fireTruck = new Image();
@@ -6,6 +6,10 @@ fireTruck.src = "/vehicles/firetruck.png";
 fireTruck.dx = -10;
 fireTruck.dy = -20;
 
+function Game(cars, track) {
+    this.cars = cars;
+    this.track = track;
+}
 
 /*
  * Car Object
@@ -23,36 +27,36 @@ function Car(x, y, alfa, color, maxVelocity, radius) {
     this.r = radius == null ? 10 : radius;			// Radius
 
     this.forward = function () {
-        if (car.v > 0) {
-            car.v *= car.a; // Accelerate
-        } else if (car.v < 0) {
-            car.v *= 1 - (car.a - 1) * 5;
+        if (this.v > 0) {
+            this.v *= this.a; // Accelerate
+        } else if (this.v < 0) {
+            this.v *= 1 - (this.a - 1) * 5;
         } else {
-            car.v = car.v0;
+            this.v = this.v0;
         }
     }
 
     this.reverse = function () {
-        if (car.v < 0) {
-            car.v *= car.a;
-        } else if (car.v > 0) {
-            car.v *= 1 - (car.a - 1) * 5;
+        if (this.v < 0) {
+            this.v *= this.a;
+        } else if (this.v > 0) {
+            this.v *= 1 - (this.a - 1) * 5;
         } else {
-            car.v = -1 * car.v0;
+            this.v = -1 * this.v0;
         }
     }
 
     this.brake = function () {
-        car.v *= Math.pow(1 - (car.a - 1), 3);
+        this.v *= Math.pow(1 - (this.a - 1), 3);
     }
 
     this.friction = function () {
-        car.v *= 0.98; // Friction
+        this.v *= 0.98; // Friction
     }
 
     /* Car's representation */
     this.repr = function (c, x, y) {
-        switch (car.model) {
+        switch (this.model) {
             case "disk":
 
                 c.fillStyle = this.color;
@@ -61,7 +65,7 @@ function Car(x, y, alfa, color, maxVelocity, radius) {
                 c.fill();
                 break;
             case "firetruck":
-			default:
+            default:
                 //Save the context so that nothing already on the canvas is affected.
                 c.save();
 
@@ -142,31 +146,33 @@ function makeDriftable(car) {
     }
 }
 
-function addAIDriver(car){
-	//Add the ML library
-	let myScript = document.createElement("script");
-	myScript.setAttribute("src", "https://unpkg.com/ml5@latest/dist/ml5.min.js");
-	document.body.appendChild(myScript);
+function addAIDriver(car) {
+    //Add the ML library
+    let myScript = document.createElement("script");
+    myScript.setAttribute("src", "https://unpkg.com/ml5@latest/dist/ml5.min.js");
+    document.body.appendChild(myScript);
 
-	function waitML(){
-		if( Object.is(window.ml5,undefined)){
-			setTimeout(waitML,500);
-		}else{
-			console.log('ml5 version:', window.ml5.version);
-		}
-	}
-	waitML();
+    function waitML() {
+        if (Object.is(window.ml5, undefined)) {
+            setTimeout(waitML, 500);
+        } else {
+            console.log('ml5 version:', window.ml5.version);
+        }
+    }
 
-	//@todo Setup the model
+    waitML();
+
+    //@todo Setup the model
 
 
-	car = Object.is(car,undefined) ? window.car : car;
-	//Tap into the drive and look methods
-	car.look = function(){}
-	car.drive = function(){}
+    car = Object.is(car, undefined) ? window.car : car;
+    //Tap into the drive and look methods
+    car.look = function () {
+    }
+    car.drive = function () {
+    }
 
 }
-
 
 
 /*
@@ -215,77 +221,82 @@ function frame() {
     }
 
     if (show === 'game') {
-        // Backup
-        var x = car.x,
-            y = car.y;
 
-        if (keys['UP']) {
-            car.forward();
-        } else if (keys['DOWN']) {
-            car.reverse();
-        } else {
-            car.friction();
-        }
+        game.cars.forEach(function (car) {
+            // Save X/Y in case of collision
+            let x = car.x, y = car.y;
 
-        // Brakes
-        if (keys['SPACE']) {
-            car.brake();
-        }
-
-        if (Math.abs(car.v) < 0.2) car.v = 0;
-
-        // Speed limit
-        if (car.v > 0) {
-            if (car.v > car.maxVelocity) car.v = car.maxVelocity;
-        } else if (car.v < 0) {
-            if (car.v < -1 / 2 * car.maxVelocity) car.v = -1 / 2 * car.maxVelocity;
-        }
-
-        // Steering
-        if (!strictSteering || car.v > 0) {
-            if (keys['LEFT']) {
-                car.alfa += steeringAngle;
-            } else if (keys['RIGHT']) {
-                car.alfa -= steeringAngle;
+            if (keys['UP']) {
+                car.forward();
+            } else if (keys['DOWN']) {
+                car.reverse();
+            } else {
+                car.friction();
             }
-        }
-        if (car.alfa > 2 * Math.PI) car.alfa %= 2 * Math.PI;
 
-        // Update car's position
-        car.x += car.v * Math.cos(car.alfa);
-        car.y -= car.v * Math.sin(car.alfa);
+            // Brakes
+            if (keys['SPACE']) {
+                car.brake();
+            }
 
-        // Special effects
-        track.teleporter(car);
+            if (Math.abs(car.v) < 0.2) car.v = 0;
 
-        // Collision
-        if (car.collision()) {
-            car.x = x;
-            car.y = y;
-            car.v = -1 * car.v / 1.5;
-        }
+            // Speed limit
+            if (car.v > 0) {
+                if (car.v > car.maxVelocity) car.v = car.maxVelocity;
+            } else if (car.v < 0) {
+                if (car.v < -1 / 2 * car.maxVelocity) car.v = -1 / 2 * car.maxVelocity;
+            }
 
-        // Checkpoints
-        if (track.checkpoints != null) {
-            if (insideRectangle(car.x, car.y, track.checkpoints['1'])) { // Checkpoint 1
-                if (car.checkpoints[0] && car.checkpoints[1]) {
+            // Steering
+            if (!strictSteering || car.v > 0) {
+                if (keys['LEFT']) {
+                    car.alfa += steeringAngle;
+                } else if (keys['RIGHT']) {
+                    car.alfa -= steeringAngle;
+                }
+            }
+            if (car.alfa > 2 * Math.PI) car.alfa %= 2 * Math.PI;
+
+            // Update car's position
+            car.x += car.v * Math.cos(car.alfa);
+            car.y -= car.v * Math.sin(car.alfa);
+
+            // Special effects
+            track.teleporter(car);
+
+            // Collision
+            if (car.collision()) {
+                car.x = x;
+                car.y = y;
+                car.v = -1 * car.v / 1.5;
+            }
+
+            // Checkpoints
+            if (track.checkpoints != null) {
+                if (insideRectangle(car.x, car.y, track.checkpoints['1'])) { // Checkpoint 1
+                    if (car.checkpoints[0] && car.checkpoints[1]) {
+                        car.resetCheckpoints();
+                    }
+                    if (!car.checkpoints[0]) car.checkpoints[0] = true;
+                } else if (insideRectangle(car.x, car.y, track.checkpoints['2'])) { // Checkpoint 2
+                    if (car.checkpoints[0]) {
+                        if (!car.checkpoints[1]) car.checkpoints[1] = true;
+                    } else {
+                        car.resetCheckpoints();
+                    }
+                } else if (insideRectangle(car.x, car.y, track.checkpoints['start'])) { // Start
+                    if (car.allCheckpoints()) newLap();
+
                     car.resetCheckpoints();
                 }
-                if (!car.checkpoints[0]) car.checkpoints[0] = true;
-            } else if (insideRectangle(car.x, car.y, track.checkpoints['2'])) { // Checkpoint 2
-                if (car.checkpoints[0]) {
-                    if (!car.checkpoints[1]) car.checkpoints[1] = true;
-                } else {
-                    car.resetCheckpoints();
-                }
-            } else if (insideRectangle(car.x, car.y, track.checkpoints['start'])) { // Start
-                if (car.allCheckpoints()) newLap();
-
-                car.resetCheckpoints();
             }
-        }
 
-        car.newShadow.push([car.x, car.y, car.alfa]);
+            car.newShadow.push([car.x, car.y, car.alfa]);
+
+
+        });
+
     } else if (show === 'menu') {
         // Nothing to do here
     } else if (show === '321') {
@@ -328,8 +339,10 @@ function frame() {
         car.reprShadow(c, shadow[0] - trackOffsetX, shadow[1] - trackOffsetY, shadow[2]);
     }
 
-    // Draw
-    car.repr(c, rX, rY);
+    game.cars.forEach(function (car) {
+        // Draw
+        car.repr(c, rX, rY);
+    });
 
     if (show === 'game') {
         // GO!
@@ -367,6 +380,7 @@ function newLap() {
 
     lapTimesList.innerHTML += '<li>' + (n / 1000).toFixed(2) + '</li>';
 }
+
 
 /*
  * Load track
@@ -576,7 +590,7 @@ var tracks = [
             '2': [480, 490, 400, 559]
         }),
         new Track('Infinity', 'infinity', 1000, 600, 550, 250, null, infiniteTrack),
-        new Track('Streets','streets',1500,800,545,80,300,null,null,{
+        new Track('Streets', 'streets', 1500, 800, 545, 80, 300, null, null, {
             'start': [790, 800, 5, 160],
             '1': [850, 860, 5, 160],
             '2': [900, 910, 5, 160]
@@ -585,6 +599,7 @@ var tracks = [
     ],
     track, c, cNode, hiddenCanvas, trackImg,
     car = new Car(0, 0),
+    car2 = new Car(100, 0),
     trackLoaded1, trackLoaded2, trackLoaded,
     trackImageData,
     keyCodes = {37: 'LEFT', 38: 'UP', 39: 'RIGHT', 40: 'DOWN', 32: 'SPACE'},
@@ -616,6 +631,8 @@ var debug = false;
 
 // Load track
 loadTrack(1);
+
+var game = new Game([car, car2], track);
 
 // Select track
 var selected,
