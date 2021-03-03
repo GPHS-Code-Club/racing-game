@@ -1,4 +1,4 @@
-console.log('v4');
+console.log('v6');
 
 
 let fireTruck = new Image();
@@ -6,15 +6,18 @@ fireTruck.src = "vehicles/firetruck.png";
 fireTruck.dx = -10;
 fireTruck.dy = -20;
 
+
 function Game(cars, track) {
     this.cars = cars;
     this.track = track;
 }
 
+
 /*
  * Car Object
+ *
  */
-function Car(x, y, alfa, color, maxVelocity, radius) {
+function Car(x, y, alfa, color, maxVelocity, radius, friction) {
     this.x = x;					// X coordinate
     this.y = y;					// Y coordinate
     this.alfa = alfa == null ? Math.PI / 2 : alfa;	// Angle
@@ -25,6 +28,10 @@ function Car(x, y, alfa, color, maxVelocity, radius) {
 
     this.color = color == null ? '#4A96AD' : color;	// Car's color
     this.r = radius == null ? 10 : radius;			// Radius
+
+    this.performance = {
+        friction: friction == null ? 0.98 : friction
+    };
 
     this.forward = function () {
         if (this.v > 0) {
@@ -50,8 +57,55 @@ function Car(x, y, alfa, color, maxVelocity, radius) {
         this.v *= Math.pow(1 - (this.a - 1), 3);
     }
 
+    this.turnLeft = function () {
+        this.alfa += steeringAngle;
+    }
+
+    this.turnRight = function () {
+        this.alfa -= steeringAngle;
+    }
+
     this.friction = function () {
-        this.v *= 0.98; // Friction
+        this.v *= this.performance.friction; // Friction
+
+    }
+
+    this.move = function () {
+        if (keys['UP']) {
+            this.forward();
+        } else if (keys['DOWN']) {
+            this.reverse();
+        } else {
+            this.friction();
+        }
+        // Brakes
+        if (keys['SPACE']) {
+            this.brake();
+        }
+
+        if (Math.abs(this.v) < 0.2) this.v = 0;
+
+        // Speed limit
+        if (this.v > 0) {
+            if (this.v > this.maxVelocity) this.v = this.maxVelocity;
+        } else if (this.v < 0) {
+            if (this.v < -1 / 2 * this.maxVelocity) this.v = -1 / 2 * this.maxVelocity;
+        }
+
+        // Steering
+        if (!strictSteering || this.v > 0) {
+            if (keys['LEFT']) {
+                this.turnLeft();
+            } else if (keys['RIGHT']) {
+                this.turnRight();
+            }
+        }
+        if (this.alfa > 2 * Math.PI) this.alfa %= 2 * Math.PI;
+
+        // Update this's position
+        this.x += this.v * Math.cos(this.alfa);
+        this.y -= this.v * Math.sin(this.alfa);
+
     }
 
     /* Car's representation */
@@ -127,7 +181,7 @@ function Car(x, y, alfa, color, maxVelocity, radius) {
     this.checkpoints = [false, false];
     this.allCheckpoints = function () {
         for (var i = 0; i < this.checkpoints.length; i++) {
-            if (!car.checkpoints[i]) return false;
+            if (!playerCar.checkpoints[i]) return false;
         }
         return true;
     }
@@ -197,7 +251,7 @@ function Track(name, filename, width, height, x, y, alfa, teleporter, checkpoint
      * Those 3 areas must NOT intersect! The 3 checkpoints must follow in this order (in the direction of driving): start, checkpoint 1, checkpoint 2.
      */
     this.checkpoints = checkpoints == null ? null : checkpoints;
-};
+}
 
 /*
  * Track's teleporter function which simulates an infinite track
@@ -223,44 +277,11 @@ function frame() {
     if (show === 'game') {
 
         game.cars.forEach(function (car) {
+
             // Save X/Y in case of collision
             let x = car.x, y = car.y;
 
-            if (keys['UP']) {
-                car.forward();
-            } else if (keys['DOWN']) {
-                car.reverse();
-            } else {
-                car.friction();
-            }
-
-            // Brakes
-            if (keys['SPACE']) {
-                car.brake();
-            }
-
-            if (Math.abs(car.v) < 0.2) car.v = 0;
-
-            // Speed limit
-            if (car.v > 0) {
-                if (car.v > car.maxVelocity) car.v = car.maxVelocity;
-            } else if (car.v < 0) {
-                if (car.v < -1 / 2 * car.maxVelocity) car.v = -1 / 2 * car.maxVelocity;
-            }
-
-            // Steering
-            if (!strictSteering || car.v > 0) {
-                if (keys['LEFT']) {
-                    car.alfa += steeringAngle;
-                } else if (keys['RIGHT']) {
-                    car.alfa -= steeringAngle;
-                }
-            }
-            if (car.alfa > 2 * Math.PI) car.alfa %= 2 * Math.PI;
-
-            // Update car's position
-            car.x += car.v * Math.cos(car.alfa);
-            car.y -= car.v * Math.sin(car.alfa);
+            car.move();
 
             // Special effects
             track.teleporter(car);
@@ -292,6 +313,7 @@ function frame() {
                 }
             }
 
+            //recording the path
             car.newShadow.push([car.x, car.y, car.alfa]);
 
 
@@ -315,8 +337,8 @@ function frame() {
     }
 
     // Track's offset
-    var trackOffsetX = car.x - cNode.width / 2,
-        trackOffsetY = car.y - cNode.height / 2;
+    var trackOffsetX = playerCar.x - cNode.width / 2,
+        trackOffsetY = playerCar.y - cNode.height / 2;
 
     // Fix offset
     if (trackOffsetX < 0) trackOffsetX = 0;
@@ -324,9 +346,6 @@ function frame() {
     if (trackOffsetY < 0) trackOffsetY = 0;
     if (trackOffsetY > track.h - cNode.height) trackOffsetY = track.h - cNode.height;
 
-    // Car's relative position to canvas
-    var rX = car.x - trackOffsetX,
-        rY = car.y - trackOffsetY;
 
     /* REDRAW EVERYTHING */
     // Redraw map
@@ -334,14 +353,14 @@ function frame() {
     c.drawImage(trackImg, -trackOffsetX, -trackOffsetY);
 
     // Shadow
-    if (car.shadow.length > 0) {
-        var shadow = car.shadow.shift();
-        car.reprShadow(c, shadow[0] - trackOffsetX, shadow[1] - trackOffsetY, shadow[2]);
+    if (playerCar.shadow.length > 0) {
+        var shadow = playerCar.shadow.shift();
+        playerCar.reprShadow(c, shadow[0] - trackOffsetX, shadow[1] - trackOffsetY, shadow[2]);
     }
 
     game.cars.forEach(function (car) {
-        // Draw
-        car.repr(c, rX, rY);
+        // Draw each car relative to it's position on the canvas
+        car.repr(c, car.x - trackOffsetX, car.y - trackOffsetY);
     });
 
     if (show === 'game') {
@@ -375,8 +394,8 @@ function newLap() {
     lapTime = t;
     nrLaps++;
 
-    car.shadow = car.newShadow;
-    car.newShadow = [];
+    playerCar.shadow = playerCar.newShadow;
+    playerCar.newShadow = [];
 
     lapTimesList.innerHTML += '<li>' + (n / 1000).toFixed(2) + '</li>';
 }
@@ -390,18 +409,19 @@ function loadTrack(id) {
     trackLoaded1 = false, trackLoaded2 = false, trackLoaded = false;
     track = tracks[id];
 
-    // Car
-    car = new Car(0, 0);
-    car.x = track.x;
-    car.y = track.y;
-    car.alfa = track.alfa;
-    car.shadow = [];
-    car.newShadow = [];
+    game.cars.forEach(function(car,i){
+        car.x = track.x;
+        car.y = track.y+i*40;//space them out at the line
+        car.alfa = track.alfa;
+        car.shadow = [];
+        car.newShadow = [];
+    });
 
-    if (track.name == 'Track 1') {
-        car.r = 14;
-        car.maxVelocity += 1;
-    }
+
+    // if (track.name === 'Track 1') {
+    //     //give player 1 a little boost?
+    //     playerCar.maxVelocity += 1;
+    // }
 
     // Remove old img node
     var node = document.getElementById('track');
@@ -598,8 +618,8 @@ var tracks = [
 
     ],
     track, c, cNode, hiddenCanvas, trackImg,
-    car = new Car(0, 0),
-    car2 = new Car(100, 0),
+    playerCar = new Car(0, 0),
+
     trackLoaded1, trackLoaded2, trackLoaded,
     trackImageData,
     keyCodes = {37: 'LEFT', 38: 'UP', 39: 'RIGHT', 40: 'DOWN', 32: 'SPACE'},
@@ -629,10 +649,13 @@ var f, fpsTime, fpsElement = document.getElementById('fps');
 // Debug
 var debug = false;
 
+var game = new Game([playerCar, new Car(0, 0)]);
+
 // Load track
 loadTrack(1);
 
-var game = new Game([car, car2], track);
+
+
 
 // Select track
 var selected,
@@ -658,14 +681,14 @@ setInterval(function () {
         timeElement.innerHTML = ((now - time) / 1000).toFixed(2);
         lapTimeElement.innerHTML = ((now - lapTime) / 1000).toFixed(2);
         nrLapsElement.innerHTML = nrLaps;
-        speedElement.innerHTML = car.v.toFixed(2);
+        speedElement.innerHTML = playerCar.v.toFixed(2);
     }
 }, 100);
 
 // Debug
 setInterval(function () {
     if (debug) {
-        console.log(car.x + ' ' + car.y + ' ' + onTheRoad(car.x, car.y) + ' ' + car.collision());
+        console.log(playerCar.x + ' ' + playerCar.y + ' ' + onTheRoad(playerCar.x, playerCar.y) + ' ' + playerCar.collision());
     }
 }, 1000);
 
