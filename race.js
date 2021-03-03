@@ -406,7 +406,7 @@ function newLap() {
  */
 function loadTrack(id) {
     if (id < 0 || id >= tracks.length) return false;
-    trackLoaded1 = false, trackLoaded2 = false, trackLoaded = false;
+    trackLoaded1 = trackLoaded2 = trackLoaded = false;
     track = tracks[id];
 
     game.cars.forEach(function(car,i){
@@ -424,8 +424,8 @@ function loadTrack(id) {
     // }
 
     // Remove old img node
-    var node = document.getElementById('track');
-    var parent = node.parentNode;
+    let node = document.getElementById('track');
+    let parent = node.parentNode;
     parent.removeChild(node);
     // Create new
     node = document.createElement('img');
@@ -501,20 +501,18 @@ function loadTrackFinish() {
  * Check whether given coordinates lie on the road.
  */
 function onTheRoad(x, y) {
-    var i = Math.round(y) * track.w + Math.round(x);
-    return trackImageData[i];
+    return trackImageData[Math.round(y) * track.w + Math.round(x)];
 }
 
 /*
  * Event handler for selecting tracks
  */
 function selectTrack() {
-    var id = document.getElementsByName('selectTrack')[0].value;
-    loadTrack(id);
+    loadTrack(document.getElementsByName('selectTrack')[0].value);
 }
 
 function selectCar() {
-    window.car.model = document.getElementsByName('selectCar')[0].value;
+    playerCar.model = document.getElementsByName('selectCar')[0].value;
 }
 
 /*
