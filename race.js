@@ -2,7 +2,7 @@ console.log('v4');
 
 
 let fireTruck = new Image();
-fireTruck.src = "/vehicles/firetruck.png";
+fireTruck.src = "vehicles/firetruck.png";
 fireTruck.dx = -10;
 fireTruck.dy = -20;
 
