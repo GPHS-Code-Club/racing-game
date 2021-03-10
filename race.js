@@ -1,4 +1,4 @@
-console.log('v6');
+console.log('v7');
 
 
 let fireTruck = new Image();
@@ -12,26 +12,76 @@ function Game(cars, track) {
     this.track = track;
 }
 
+function Firetruck(x,y,alfa, controller){
+    //Is a car
+    Car.call(this,x,y,alfa,controller)
+
+    this.r = 20;//Math.max(this.width,this.height);
+    this.maxVelocity = 1.5;
+    this.performance = {
+        friction:  0.97
+    };
+
+    this.width = fireTruck.width;
+    this.height = fireTruck.height;
+
+    this.repr = function (c,x,y) {
+        //Save the context so that nothing already on the canvas is affected.
+        c.save();
+
+        //Move the canvas to where we want the car to appear
+        c.translate(Math.round(x), Math.round(y));
+        //Rotates the canvas underneath the car
+        c.rotate(-(this.alfa - Math.PI / 2));
+
+        //Draw the canvas
+        c.drawImage(fireTruck, fireTruck.dx, fireTruck.dy);
+
+        //Restore the context so that the next set of changes can occur
+        c.restore();
+    }
+
+    this.collision = function () {
+        //Broad phase - bounding volume?
+
+        // Checks all pixels in a rectangle/square (bounding box)
+        for (var i = -1 * this.r + 1; i < this.r - 1; i += 1) {
+            for (var j = -1 * this.r; j <this.r; j += 1) {
+
+                if ((this.x + i < 0) || (this.y + j < 0) || (this.x + i > track.w - 1) || (this.y + j > track.h - 1)) continue;
+
+                if (!onTheRoad(this.x + i, this.y + j)) return true;
+            }
+        }
+        //Narrow phase - sort and sweep?, separating axis theorem (maybe for other cars?)
+
+        return false;
+    };
+}
 
 /*
  * Car Object
  *
  */
-function Car(x, y, alfa, color, maxVelocity, radius, friction) {
+function Car(x, y, alfa, controller) {
+
     this.x = x;					// X coordinate
     this.y = y;					// Y coordinate
     this.alfa = alfa == null ? Math.PI / 2 : alfa;	// Angle
     this.v = 0;					// Velocity
     this.v0 = 0.5;				//
     this.a = 1.025;				// Acceleration pixels/frame^2
-    this.maxVelocity = maxVelocity == null ? 2 : maxVelocity;	// Maximum velocity
+    this.maxVelocity = 2;	// Maximum velocity
 
-    this.color = color == null ? '#4A96AD' : color;	// Car's color
-    this.r = radius == null ? 10 : radius;			// Radius
+    this.color = '#4A96AD';	// Car's color
+    this.r = 10;			// Radius
+
+    this.controller = controller != null ? controller : new KeyboardControl();
 
     this.performance = {
-        friction: friction == null ? 0.98 : friction
+        friction:  0.98
     };
+
 
     this.forward = function () {
         if (this.v > 0) {
@@ -67,21 +117,10 @@ function Car(x, y, alfa, color, maxVelocity, radius, friction) {
 
     this.friction = function () {
         this.v *= this.performance.friction; // Friction
-
     }
 
     this.move = function () {
-        if (keys['UP']) {
-            this.forward();
-        } else if (keys['DOWN']) {
-            this.reverse();
-        } else {
-            this.friction();
-        }
-        // Brakes
-        if (keys['SPACE']) {
-            this.brake();
-        }
+        this.controller.processInputs(this);
 
         if (Math.abs(this.v) < 0.2) this.v = 0;
 
@@ -92,48 +131,20 @@ function Car(x, y, alfa, color, maxVelocity, radius, friction) {
             if (this.v < -1 / 2 * this.maxVelocity) this.v = -1 / 2 * this.maxVelocity;
         }
 
-        // Steering
-        if (!strictSteering || this.v > 0) {
-            if (keys['LEFT']) {
-                this.turnLeft();
-            } else if (keys['RIGHT']) {
-                this.turnRight();
-            }
-        }
+
         if (this.alfa > 2 * Math.PI) this.alfa %= 2 * Math.PI;
 
-        // Update this's position
+        // Update the car's position
         this.x += this.v * Math.cos(this.alfa);
         this.y -= this.v * Math.sin(this.alfa);
-
     }
 
     /* Car's representation */
     this.repr = function (c, x, y) {
-        switch (this.model) {
-            case "disk":
-
-                c.fillStyle = this.color;
-                c.beginPath();
-                c.arc(Math.round(x), Math.round(y), this.r, -1 * Math.PI / 2 - this.alfa, Math.PI / 2 - this.alfa);
-                c.fill();
-                break;
-            case "firetruck":
-            default:
-                //Save the context so that nothing already on the canvas is affected.
-                c.save();
-
-                //Move the canvas to where we want the car to appear
-                c.translate(Math.round(x), Math.round(y));
-                //Rotates the canvas underneath the car
-                c.rotate(-(this.alfa - Math.PI / 2));
-
-                //Draw the canvas
-                c.drawImage(fireTruck, fireTruck.dx, fireTruck.dy);
-
-                //Restore the context so that the next set of changes can occur
-                c.restore();
-        }
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(Math.round(x), Math.round(y), this.r, -1 * Math.PI / 2 - this.alfa, Math.PI / 2 - this.alfa);
+        c.fill();
     }
 
     this.reprShadow = function (c, x, y, alfa) {
@@ -147,7 +158,7 @@ function Car(x, y, alfa, color, maxVelocity, radius, friction) {
 
     /* Collision algorithms */
 
-    // Bounding half-circle
+
     this.collision = function () {
         if (this.x < 0 || this.y < 0 || this.x > track.w - 1 || this.y > track.h - 1) return false;
         if (!onTheRoad(this.x, this.y)) return true;
@@ -164,19 +175,6 @@ function Car(x, y, alfa, color, maxVelocity, radius, friction) {
         return false;
     }
 
-    /*
-    // Checks all pixels in a rectangle/square (bounding box)
-    this.collision = function () {
-        for (var i = -1 * this.r + 1; i < this.r - 1; i += 1) {
-            for (var j = -1 * this.r; j <this.r; j += 1) {
-                if ((this.x + i < 0) || (this.y + j < 0) || (this.x + i > track.w - 1) || (this.y + j > track.h - 1)) continue;
-                if (!onTheRoad(this.x + i, this.y + j)) return true;
-            }
-        }
-        return false;
-    };
-    // */
-
     // Checkpoints
     this.checkpoints = [false, false];
     this.allCheckpoints = function () {
@@ -191,6 +189,88 @@ function Car(x, y, alfa, color, maxVelocity, radius, friction) {
 
     this.shadow = [];
     this.newShadow = [];
+}
+
+
+function KeyboardControl(){
+    Controller.call(this);
+    this.processInputs = function(car){
+
+        if (keys['UP']) {
+            car.forward();
+        } else if (keys['DOWN']) {
+            car.reverse();
+        } else {
+            car.friction();
+        }
+        // Brakes
+        if (keys['SPACE']) {
+            car.brake();
+        }
+
+        // Steering
+        if (!strictSteering || car.v > 0) {
+            if (keys['LEFT']) {
+                car.turnLeft();
+            } else if (keys['RIGHT']) {
+                car.turnRight();
+            }
+        }
+    }
+
+
+}
+
+function AIController(){
+    Controller.call(this);
+    this.state = 'starting';
+
+    this.setState = function(state){
+        if(state !== this.state){
+            console.log(this.state+'->'+state);
+            this.state = state;
+
+        }
+    }
+
+    this.processInputs = function(car) {
+
+        if (this.state !== 'backing-up' && this.state !== 'starting' && car.v < 0.1){
+            this.setState('stopped');
+
+        }
+        let controller = this;
+        switch(this.state){
+            case 'starting':
+                car.forward();
+                break;
+            case 'backing-up':
+                car.reverse();
+                car.turnLeft();
+                break;
+            case 'stopped':
+                this.setState('backing-up');
+                setTimeout(function () {
+                    controller.setState('starting')
+                }, 100);
+                break;
+            default:
+                car.forward();
+
+
+        }
+
+        if (car.v < 0.24) {
+            car.turnRight();
+        }
+    }
+}
+
+
+function Controller(){
+    this.processInputs = function(){
+        //do nothing
+    }
 }
 
 function makeDriftable(car) {
@@ -616,7 +696,7 @@ var tracks = [
 
     ],
     track, c, cNode, hiddenCanvas, trackImg,
-    playerCar = new Car(0, 0),
+    playerCar = new Firetruck(0,0,0,new KeyboardControl()),
 
     trackLoaded1, trackLoaded2, trackLoaded,
     trackImageData,
@@ -647,7 +727,7 @@ var f, fpsTime, fpsElement = document.getElementById('fps');
 // Debug
 var debug = false;
 
-var game = new Game([playerCar, new Car(0, 0)]);
+var game = new Game([playerCar, new Car(0, 0, 0,new AIController())]);
 
 // Load track
 loadTrack(1);

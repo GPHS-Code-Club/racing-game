@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/GPHS-Code-Club/racing-game#readme",
   "dependencies": {
+    "isomorphic-ws": "^4.0.1",
     "ws": "^7.4.3"
   }
 }
