@@ -229,17 +229,16 @@ function AIController(){
         if(state !== this.state){
             console.log(this.state+'->'+state);
             this.state = state;
-
         }
     }
 
     this.processInputs = function(car) {
+        let controller = this;
 
         if (this.state !== 'backing-up' && this.state !== 'starting' && car.v < 0.1){
             this.setState('stopped');
-
         }
-        let controller = this;
+
         switch(this.state){
             case 'starting':
                 car.forward();
@@ -256,8 +255,6 @@ function AIController(){
                 break;
             default:
                 car.forward();
-
-
         }
 
         if (car.v < 0.24) {
@@ -273,6 +270,11 @@ function Controller(){
     }
 }
 
+
+/**
+ * TBD THIS FUNCTION NOT USED CURRENTLY
+ * @param car
+ */
 function makeDriftable(car) {
     car.momentum = { //for future drifting ;)
         alfa: 0,
@@ -280,6 +282,11 @@ function makeDriftable(car) {
     }
 }
 
+
+/**
+ * TBD THIS FUNCTION NOT USED CURRENTLY
+ * @param car
+ */
 function addAIDriver(car) {
     //Add the ML library
     let myScript = document.createElement("script");
@@ -297,7 +304,6 @@ function addAIDriver(car) {
     waitML();
 
     //@todo Setup the model
-
 
     car = Object.is(car, undefined) ? window.car : car;
     //Tap into the drive and look methods
