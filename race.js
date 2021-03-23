@@ -1,4 +1,4 @@
-console.log('v7');
+console.log('v9');
 
 
 let fireTruck = new Image();
@@ -221,9 +221,12 @@ function KeyboardControl(){
 
 }
 
-function AIController(){
+function AIController(car){
     Controller.call(this);
     this.state = 'starting';
+    this.car = car;//hold a reference to our car
+    this.saw = 'nothing';
+
 
     this.setState = function(state){
         if(state !== this.state){
@@ -234,6 +237,7 @@ function AIController(){
 
     this.processInputs = function(car) {
         let controller = this;
+        this.sees = this.look(car,10)?'road':'off-road';//what is 10 pixels ahead;
 
         if (this.state !== 'backing-up' && this.state !== 'starting' && car.v < 0.1){
             this.setState('stopped');
@@ -260,6 +264,15 @@ function AIController(){
         if (car.v < 0.24) {
             car.turnRight();
         }
+    }
+    this.look = function(car,d){
+        const pX= car.x * Math.sin(car.alfa) + car.y * Math.cos(car.alfa);
+        const pY= car.x * Math.sin(car.alfa) + car.y * -Math.cos(car.alfa);
+
+        xx = car.x + (d * Math.cos(car.alfa))
+        yy = car.y + (d * Math.sin(car.alfa))
+
+        return onTheRoad(xx,yy);
     }
 }
 
@@ -408,16 +421,14 @@ function frame() {
     } else if (show === 'menu') {
         // Nothing to do here
     } else if (show === '321') {
-        show = 'game';
+         let diff = (new Date()).getTime() - countdown;
+         if (diff >= 3000) {
+         	time = (new Date()).getTime();
+         	lapTime = time;
 
-        // var diff = (new Date()).getTime() - countdown;
-        // if (diff >= 3000) {
-        // 	time = (new Date()).getTime();
-        // 	lapTime = time;
-        //
-        // 	countdown = null;
-        // 	show = 'game';
-        // }
+         	countdown = null;
+         	show = 'game';
+        }
     } else {
         return;
     }
@@ -457,13 +468,23 @@ function frame() {
     } else if (show === 'menu') {
         displayText('Press [ENTER] to start!', 400, 60);
     } else if (show === '321') {
+        // 3, 2, 1
+        var diff = (new Date()).getTime() - countdown;
         if (diff < 1000) {
             displayText('3', 100, 60);
         } else if (diff < 2000) {
             displayText('2', 100, 60);
         } else if (diff < 3000) {
             displayText('1', 100, 60);
+        } else {
+            time = (new Date()).getTime();
+            lapTime = time;
+
+            countdown = null;
+            show = 'game';
         }
+    } else {
+        return;
     }
 
     f++;
@@ -746,7 +767,7 @@ var selected,
     e = document.getElementsByName('selectTrack')[0];
 e.innerHTML = '';
 for (var i = 0; i < tracks.length; i++) {
-    selected = track.filename == tracks[i].filename ? ' selected' : '';
+    selected = track.filename === tracks[i].filename ? ' selected' : '';
     e.innerHTML += '<option value="' + i + '"' + selected + '>' + tracks[i].name + '</option>';
 }
 
@@ -760,7 +781,7 @@ setInterval(function () {
 
 // Display time, lap time, nr. of laps, speed
 setInterval(function () {
-    if (show == 'game') {
+    if (show === 'game') {
         var now = (new Date()).getTime();
         timeElement.innerHTML = ((now - time) / 1000).toFixed(2);
         lapTimeElement.innerHTML = ((now - lapTime) / 1000).toFixed(2);
