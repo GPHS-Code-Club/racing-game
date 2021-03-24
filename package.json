@@ -1,0 +1,23 @@
+{
+  "name": "racing-game-server",
+  "version": "0.0.1",
+  "description": "a node.js server for the multiplayer version of the racing game",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GPHS-Code-Club/racing-game.git"
+  },
+  "author": "Joel Simpson <joel.simpson@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GPHS-Code-Club/racing-game/issues"
+  },
+  "homepage": "https://github.com/GPHS-Code-Club/racing-game#readme",
+  "dependencies": {
+    "isomorphic-ws": "^4.0.1",
+    "ws": "^7.4.3"
+  }
+}

@@ -1,2 +1,14 @@
-_*
+# Mac Folder view configuration files
+.DS_Store
+Desktop.ini
+
+# Mac Thumbnail cache files
+._*
+Thumbs.db
+
+#Jetbrains project/meta files
 **/.idea/*
+
+#Your server start script
+start.sh
+
