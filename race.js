@@ -293,31 +293,15 @@ function AIController(car) {
         if (this.eyes[0] && this.eyes[1] && this.eyes[2] && this.eyes[3] && this.eyes[4] && this.eyes[5] && this.eyes[6]) {
             car.forward();
         } else {
-
-            if (!this.eyes[0]) {
-                car.turnRight();
-                car.forward();
-            }
-            if (!this.eyes[1]) {
-                car.turnRight();
-            }
-            if (!this.eyes[2]) {
-                car.brake();
+            if (!this.eyes[0] || !this.eyes[1] || !this.eyes[2]) {
                 car.turnRight();
             }
             if (!this.eyes[3]) {
                 car.reverse();
-            }
-            if (!this.eyes[4]) {
-                car.brake();
-                car.turnLeft();
-            }
-            if (!this.eyes[5]) {
-                car.turnLeft();
-            }
-            if (!this.eyes[6]) {
                 car.turnRight();
-                car.forward();
+            }
+            if (!this.eyes[4] || !this.eyes[5] || !this.eyes[6]) {
+                car.turnLeft();
             }
         }
 
@@ -334,7 +318,7 @@ function AIController(car) {
 
         let eyeCount = 0;
 
-        for (let i = -fov; i < fov; i += eye) {
+        for (let i = fov; i > -fov ; i -= eye) {
             const lookX = (d * Math.cos(car.alfa + i));
             const lookY = (d * Math.sin(car.alfa + i));
 
