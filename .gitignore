@@ -9,6 +9,9 @@ Thumbs.db
 #Jetbrains project/meta files
 **/.idea/*
 
+#Ignoring node_modules
+/node_modules
+
 #Your server start script
 start.sh
 

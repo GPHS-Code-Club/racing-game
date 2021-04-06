@@ -1,4 +1,4 @@
-console.log('v14 - visual ai' + Date.now());
+console.log('Racing Game \n - game server 0.1 \n - game client 0.15');
 
 
 let fireTruck = new Image();
@@ -469,7 +469,7 @@ function frame() {
 
             //recording the path
             car.newShadow.push([car.x, car.y, car.alfa]);
-
+            ws.sendPosition(car);
 
         });
 
