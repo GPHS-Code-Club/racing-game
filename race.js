@@ -1,4 +1,4 @@
-console.log('Racing Game \n - game server 0.1 \n - game client 0.15');
+console.log('Racing Game \n - game server 1.0 \n - game client 0.17');
 
 
 let fireTruck = new Image();
@@ -9,6 +9,7 @@ fireTruck.dy = -20;
 
 function Game(cars, track) {
     this.cars = cars;
+    this.remoteCars = [];
     this.track = track;
 }
 
@@ -57,6 +58,18 @@ function Firetruck(x, y, alfa, controller) {
 
         return false;
     };
+}
+
+function RemoteCar(x,y,alfa,controller){
+    Car.call(this,x,y,alfa,controller)
+    this.repr = function (c, x, y, alfa) {
+        c.globalAlpha = 0.5;
+        c.fillStyle = '#900';
+        c.beginPath();
+        c.arc(Math.round(x), Math.round(y), this.r, -1 * Math.PI / 2 - alfa, Math.PI / 2 - alfa);
+        c.fill();
+        c.globalAlpha = 1;
+    }
 }
 
 /*
@@ -225,23 +238,21 @@ function KeyboardControl() {
 
 function AIController(car) {
     Controller.call(this);
-    this.state = 'starting';
+
     this.car = car;//hold a reference to our car
-    this.saw = 'nothing';
-    this.nextAction = false;
 
-
-    this.setState = function (state) {
-        if (state !== this.state) {
-            console.log(this.state + '->' + state);
-            this.state = state;
-        }
-    }
-    console.log(this.state);
+    // this.state = 'starting';
+    // this.nextAction = false;
+    // this.setState = function (state) {
+    //     if (state !== this.state) {
+    //         console.log(this.state + '->' + state);
+    //         this.state = state;
+    //     }
+    // }
+    // console.log(this.state);
 
     this.processInputs = function (car) {
         let self = this;
-        //this.sees = this.look(car,0.01)?'road':'off-road';//what is 10 pixels ahead;
 
         // switch (this.state) {
         //     case 'starting':
@@ -331,22 +342,9 @@ function AIController(car) {
     }
 }
 
-
 function Controller() {
     this.processInputs = function () {
         //default controller does nothing
-    }
-}
-
-
-/**
- * TBD THIS FUNCTION NOT USED CURRENTLY
- * @param car
- */
-function makeDriftable(car) {
-    car.momentum = { //for future drifting ;)
-        alfa: 0,
-        force: 10,
     }
 }
 
@@ -429,7 +427,6 @@ function frame() {
     }
 
     if (show === 'game') {
-
         game.cars.forEach(function (car) {
 
             // Save X/Y in case of collision
@@ -469,8 +466,6 @@ function frame() {
 
             //recording the path
             car.newShadow.push([car.x, car.y, car.alfa]);
-            ws.sendPosition(car);
-
         });
 
     } else if (show === 'menu') {
@@ -510,6 +505,20 @@ function frame() {
         playerCar.reprShadow(c, shadow[0] - trackOffsetX, shadow[1] - trackOffsetY, shadow[2]);
     }
 
+    for(let i in game.remoteCars){
+        const remote = game.remoteCars[i];
+        remote.cX = remote.latestPos.x - trackOffsetX;
+        remote.cY = remote.latestPos.y - trackOffsetY;
+        remote.repr(c,remote.cX,remote.cY,remote.latestPos.a);
+    }
+    game.remoteCars.forEach(function(car){
+        car.cX = car.x - trackOffsetX;
+        car.cY = car.y - trackOffsetY;
+
+        // Draw each car relative to it's position on the canvas
+        car.repr(c, car.cX, car.cY);
+    });
+
     game.cars.forEach(function (car) {
 
         car.cX = car.x - trackOffsetX;
@@ -518,6 +527,9 @@ function frame() {
         // Draw each car relative to it's position on the canvas
         car.repr(c, car.cX, car.cY);
 
+        if(car === playerCar && ws){
+            ws.sendPosition(car);
+        }
 
         let d = 40; //sight distance
         let fov = 1.0;
@@ -758,13 +770,15 @@ function keyHandler(e) {
     }
 
     if ((e.keyCode >= 37 && e.keyCode <= 40) || e.keyCode === 32) {
+
+        const keyCodes = {37: 'LEFT', 38: 'UP', 39: 'RIGHT', 40: 'DOWN', 32: 'SPACE'}
         keys[keyCodes[e.keyCode]] = e.type === 'keydown';
         e.preventDefault();
     }
 }
 
 /*
- * Return whether coordinates (x, y) lie inside rectangle.
+ * Return whether coordinates (x, y) lie inside rectangle array x1,x2,y1,y2.
  */
 function insideRectangle(x, y, array) {
     return (x > array[0] && x < array[1] && y > array[2] && y < array[3]);
@@ -798,8 +812,8 @@ var tracks = [
 
     trackLoaded1, trackLoaded2, trackLoaded,
     trackImageData,
-    keyCodes = {37: 'LEFT', 38: 'UP', 39: 'RIGHT', 40: 'DOWN', 32: 'SPACE'},
-    keys = {
+
+    keys = { //pressed status
         'UP': false,
         'DOWN': false,
         'LEFT': false,
@@ -824,8 +838,11 @@ let f, fpsTime, fpsElement = document.getElementById('fps');
 
 // Debug
 let debug = false;
-let playerCar = new Firetruck(0, 0, 0, new AIController()); //KeyboardControl()),
-let game = new Game([playerCar, new Car(0, 0, 0, new AIController())]);
+// let playerCar = new Firetruck(0, 0, 0, new AIController());
+// let game = new Game([playerCar, new Car(0, 0, 0, new AIController())]);
+
+let playerCar = new Firetruck(0, 0, 0, new KeyboardControl());
+let game = new Game([playerCar]);
 
 // Load track
 loadTrack(1);
