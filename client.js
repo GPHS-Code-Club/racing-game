@@ -1,6 +1,7 @@
-const ws = new WebSocket('ws://localhost:9898/');
+const ws = new WebSocket('ws://localhost:9000/');
 
 ws.GAMEID = 0;
+ws.PLAYERID = 0;
 
 ws.onopen = function () {
     console.log('WebSocket Client Connected To Server');
@@ -14,7 +15,8 @@ ws.onmessage = function (e) {
     switch (e.t) {
         case 'JOINED':
             ws.GAMEID = e.d.gid;
-            console.log("Joined Game ID:" + ws.GAMEID);
+            ws.PLAYERID = e.d.pid;
+            console.log("Joined Game ID:" + ws.GAMEID + ' as player #'+ws.PLAYERID);
             break;
         default:
             console.log("Received Unknown: '" + e.data + "'");
@@ -23,28 +25,35 @@ ws.onmessage = function (e) {
 
 ws.sendPosition = function (car) {
     this.sendJSON({
-        type: 'POSITION',
-        data: {
-            x: car.x,
-            y: car.y
+        type: 'P',//position
+        d: {
+            x: Math.round(car.x),
+            y: Math.round(car.y),
+            a: car.alfa,
         }
     });
 }
 
 ws.join = function () {
-    this.sendJSON({type: 'JOIN', data: {name: 'Joel', vehicle: 'firetruck'}})
+    const name = prompt('Player Name','Guest-'+Math.floor(Math.random() * 10)+1);
+    this.sendJSON({type: 'JOIN', data: {name: name, vehicle: 'firetruck'}})
 }
 
 
 ws.sendJSON = function (m) {
+    if(ws.readyState !== ws.OPEN ){
+        return;
+    }
     this.send(JSON.stringify(m));
 }
 
 ws.onerror = function (error) {
-    alert('DISCONNECTED: ERROR');
+    alert('CONNECTION FAILED');
     console.log('WebSocket connection failed:' + error);
     // This means the connection failed.
     console.log(ws.readyState); // 3 - CLOSED (probably from 0)
+
+    ws.onclose = null; //already disconnected, no need to double notify;
 }
 
 ws.onclose = function () {

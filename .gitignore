@@ -10,7 +10,7 @@ Thumbs.db
 **/.idea/*
 
 #Ignoring node_modules
-/node_modules
+**/node_modules
 
 #Your server start script
 start.sh

@@ -20,5 +20,8 @@
     "isomorphic-ws": "^4.0.1",
     "websocket": "^1.0.33",
     "ws": "^7.4.3"
+  },
+  "devDependencies": {
+    "jshint": "^2.12.0"
   }
 }
