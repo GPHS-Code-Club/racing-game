@@ -1,8 +1,12 @@
 /**
  * Responsible for communication between the clients and the game
+ *
+ *
  */
 const Game = require('./Game');
 const http = require('http');
+const readline = require('readline');
+const WebSocketConnection = require("websocket");
 const WebSocketServer = require('websocket').server;
 
 const server = http.createServer();
@@ -32,16 +36,18 @@ wsServer.on('request', function (request) {
 
     connection.sendJSON = function (m) {
         mps.out++;
+        mps.total_out++;
         connection.send(JSON.stringify(m));
     }
 
     connection.on('message', function (message) {
         mps.in++;
+        mps.total_in++;
         const m = JSON.parse(message.utf8Data);
 
         switch (m.t) {
 
-            case "JOIN":
+            case "J"://Join
                 m.d.id = generateUIDWithCollisionChecking();
                 player = m.d;
 
@@ -51,13 +57,13 @@ wsServer.on('request', function (request) {
                     games.push(new Game());
                 }
 
-
                 //create references
                 player.connection = this;
+                player.ip = this.remoteAddress;
                 player.game = games[0];
                 games[0].players[player.id] = player;
 
-                //console.log('JOINED:' + player.name + ' added to game ' + player.game.id);
+                log('JOINED:' + player.name + ' added to game ' + player.game.id);
 
                 connection.sendJSON(
                     {
@@ -71,6 +77,8 @@ wsServer.on('request', function (request) {
 
                 break;
             case "P"://position report
+                if (!games[0]) return;
+                if (!games[0].playerCount() > 1) return;
                 //Update the player's position in the game
                 games[0].players[player.id].x = m.d.x;
                 games[0].players[player.id].y = m.d.y;
@@ -80,35 +88,35 @@ wsServer.on('request', function (request) {
                 m.d.playerId = player.id;
 
                 //Tell the other player's about the position
-                for(let i in games[0].players){
-                    if(i !== player.id) {
+                for (let i in games[0].players) {
+                    if (i !== player.id) {
                         //console.log('sending '+player.id+' update to '+i);
                         games[0].players[i].connection.sendJSON(m);
                     }
                 }
 
                 break;
-            case "LIST":
+            case "L"://List
                 //@todo return list of games, including state and count
                 connection.sendJSON(games);
                 break;
             default:
-                console.log('Unknown Message:' + message.utf8Data);
+                log('Unknown Message:' + message.utf8Data);
         }
 
     });
     connection.on('error', function (e) {
-        console.table(e);
-        process.exit();
+        log(e.toString());
+
     });
     connection.on('close', function (reasonCode, description) {
-        console.log(player.name + ' has disconnected.');
+        log(player.name + ' has disconnected.');
         //remove player from game
         delete games[0].players[player.id];
-        if (Object.keys(games[0].players).length === 0) {
-            //no players, no game
-            delete games[0];
-        }
+        // if (Object.keys(games[0].players).length === 0) {
+        //     //no players, no game
+        //     delete games[0];
+        // }
     });
 });
 
@@ -119,37 +127,76 @@ setInterval(() => {
     //readline.cursorTo(process.stdout,0,0);
     //console.table(games);
 
-    if (games.length >= 1 && Object.keys(games[0].players).length > 0) {
+    if (games[0] && games[0].playerCount() > 0) {
         console.log('PLAYERS');
         console.table(games[0].players);
     } else {
-        console.log('Waiting for connections...');
+        log('No Games or Players yet...waiting for connections...');
     }
     console.log('PERFORMANCE');
     console.table(renderMps());
+    writeLog();
+
 
 }, 1000);
 
+let outputLog = [];
+let outputLogStartRow = 16;
+
+/**
+ *
+ * @param {string} message string
+ */
+function log(message) {
+    const now = new Date();
+    const dateString = ("0" + now.getHours()).slice(-2) + ":" +
+        ("0" + now.getMinutes()).slice(-2) + ":" +
+        ("0" + now.getSeconds()).slice(-2);
+
+    message = "| " + dateString + " - " + message;
+
+    if (outputLog.push(message) > (process.stdout.rows - outputLogStartRow - 1)) {
+        outputLog.shift();
+    }
+}
+
+function writeLog() {
+    const left = 0, top = outputLogStartRow;
+
+    readline.cursorTo(process.stdout, left, top);
+    process.stdout.write('EVENT LOG');
+    outputLog.forEach(function (value, index, array) {
+        readline.cursorTo(process.stdout, left, top + index + 1);
+        process.stdout.write(value);
+    });
+
+}
 
 /**
  * Track the number of messages we process per second
  *
  */
-let mps = {in: 0, out: 0}, mpsTime = (new Date()).getTime();
+let mps = {in: 0, out: 0, total_in: 0, total_out: 0};
+let mpsTime = (new Date()).getTime();
 
 function renderMps() {
     const curTime = (new Date()).getTime();
     const elapsed = (curTime - mpsTime) / 1000;
 
     const data = {
-        'messages/sec': {
-            received: Math.floor(mps.in / elapsed),
-            sent: Math.floor(mps.out / elapsed)
+        'messages per sec': {
+            received: Math.floor(mps.in / elapsed)+'/s',
+            sent: Math.floor(mps.out / elapsed)+'/s'
+        },
+        '  messages total': {
+            received: mps.total_in,
+            sent: mps.total_out
         }
     };
 
     if ((new Date()).getTime() - mpsTime > 5000) { //5 second average?
-        mps = {in: 0, out: 0};
+        mps.in = 0;
+        mps.out = 0;
         mpsTime = curTime;
     }
     return data;

@@ -51,7 +51,7 @@ function multiplayerConnect() {
 
     ws.join = function () {
         const name = prompt('Connected, what\'s your name?', 'Guest-' + Math.floor(Math.random() * 10) + 1);
-        this.sendJSON({t: 'JOIN', d: {name: name, vehicle: 'firetruck'}})
+        this.sendJSON({t: 'J', d: {name: name, vehicle: 'firetruck'}})
     }
 
 
