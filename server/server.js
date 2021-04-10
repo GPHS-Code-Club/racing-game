@@ -184,14 +184,15 @@ function renderMps() {
     const elapsed = (curTime - mpsTime) / 1000;
 
     const data = {
-        'messages per sec': {
-            received: Math.floor(mps.in / elapsed)+'/s',
-            sent: Math.floor(mps.out / elapsed)+'/s'
-        },
-        '  messages total': {
+        'messages total': {
             received: mps.total_in,
             sent: mps.total_out
-        }
+        },
+        '(5 sec avg)m/s': {
+            received: Math.floor(mps.in / elapsed),
+            sent: Math.floor(mps.out / elapsed)
+        },
+
     };
 
     if ((new Date()).getTime() - mpsTime > 5000) { //5 second average?

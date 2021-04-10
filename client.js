@@ -35,7 +35,7 @@ function multiplayerConnect() {
         }
     }
 
-    ws.sendPosition = function (car) {
+    ws.sendPosition = async function (car) {
         if (ws.readyState !== ws.OPEN) {
             return;
         }

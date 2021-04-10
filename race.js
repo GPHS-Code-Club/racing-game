@@ -1,4 +1,4 @@
-console.log('Racing Game \n - game server 1.0 \n - game client 0.17');
+console.log('Racing Game \n - game server 1.1 \n - game client 0.19');
 
 
 let fireTruck = new Image();
@@ -26,7 +26,7 @@ function Firetruck(x, y, alfa, controller) {
     this.width = fireTruck.width;
     this.height = fireTruck.height;
 
-    this.repr = function (c, x, y) {
+    this.draw = function (c, x, y) {
         //Save the context so that nothing already on the canvas is affected.
         c.save();
 
@@ -40,6 +40,7 @@ function Firetruck(x, y, alfa, controller) {
 
         //Restore the context so that the next set of changes can occur
         c.restore();
+        this.controller.draw(c, x, y);
     }
 
     this.collision = function () {
@@ -60,9 +61,9 @@ function Firetruck(x, y, alfa, controller) {
     };
 }
 
-function RemoteCar(x,y,alfa,controller){
-    Car.call(this,x,y,alfa,controller)
-    this.repr = function (c, x, y, alfa) {
+function RemoteCar(x, y, alfa, controller) {
+    Car.call(this, x, y, alfa, controller)
+    this.draw = function (c, x, y, alfa) {
         c.globalAlpha = 0.5;
         c.fillStyle = '#900';
         c.beginPath();
@@ -84,6 +85,7 @@ function Car(x, y, alfa, controller) {
     this.cY = 0;                  // Y translated to canvas
     this.alfa = alfa == null ? Math.PI / 2 : alfa;	// Angle
     this.v = 0;					// Velocity
+
     this.v0 = 0.5;				//
     this.a = 1.025;				// Acceleration pixels/frame^2
     this.maxVelocity = 2;	// Maximum velocity
@@ -91,6 +93,7 @@ function Car(x, y, alfa, controller) {
     this.color = '#4A96AD';	// Car's color
     this.r = 10;			// Radius
 
+    //if a controller isn't provided attach the Keyboard controls
     this.controller = controller != null ? controller : new KeyboardControl();
 
     this.performance = {
@@ -154,15 +157,16 @@ function Car(x, y, alfa, controller) {
         this.y -= this.v * Math.sin(this.alfa);
     }
 
-    /* Car's representation */
-    this.repr = function (c, x, y) {
+    /* Car's drawesentation */
+    this.draw = function (c, x, y) {
         c.fillStyle = this.color;
         c.beginPath();
         c.arc(Math.round(x), Math.round(y), this.r, -1 * Math.PI / 2 - this.alfa, Math.PI / 2 - this.alfa);
         c.fill();
+        this.controller.draw(c, x, y, this);
     }
 
-    this.reprShadow = function (c, x, y, alfa) {
+    this.drawShadow = function (c, x, y, alfa) {
         c.globalAlpha = 0.5;
         c.fillStyle = '#999';
         c.beginPath();
@@ -232,119 +236,139 @@ function KeyboardControl() {
             }
         }
     }
-
-
 }
 
-function AIController(car) {
+function AIEyeBasedController() {
     Controller.call(this);
 
-    this.car = car;//hold a reference to our car
+    //Holds array of {x,y,road:boolean} for each eye; true if it sees the road
+    this.eyes = [];
 
-    // this.state = 'starting';
-    // this.nextAction = false;
-    // this.setState = function (state) {
-    //     if (state !== this.state) {
-    //         console.log(this.state + '->' + state);
-    //         this.state = state;
-    //     }
-    // }
-    // console.log(this.state);
 
     this.processInputs = function (car) {
-        let self = this;
 
-        // switch (this.state) {
-        //     case 'starting':
-        //         car.forward();
-        //         if (!this.nextAction) {
-        //             this.nextAction = 'going-forward';
-        //             setTimeout(() => {
-        //
-        //                 self.setState(self.nextAction);
-        //                 self.nextAction = false;
-        //             }, 100);
-        //         }
-        //
-        //         break;
-        //     case 'going-forward':
-        //         car.forward();
-        //         break;
-        //     case 'backing-up':
-        //         car.reverse();
-        //         car.turnLeft();
-        //         if (!this.nextAction) {
-        //             this.nextAction = 'going-forward';
-        //             setTimeout(() => {
-        //
-        //                 self.setState(self.nextAction);
-        //                 self.nextAction = false;
-        //             }, 500);
-        //         }
-        //         break;
-        //     case 'stopping':
-        //         if (!this.nextAction) {
-        //             this.nextAction = 'backing-up';
-        //             setTimeout(() => {
-        //
-        //                 self.setState(self.nextAction);
-        //                 self.nextAction = false;
-        //             }, 500);
-        //         }
-        //         break;
-        //     default:
-        //         car.forward();
-        // }
-        //
-        // if (car.v < 0.0) {
-        //     this.setState('stopping');
-        // }
         this.look(car);
 
-        if (this.eyes[0] && this.eyes[1] && this.eyes[2] && this.eyes[3] && this.eyes[4] && this.eyes[5] && this.eyes[6]) {
+        if (this.eyes[0].road && this.eyes[1].road && this.eyes[2].road && this.eyes[3].road && this.eyes[4].road && this.eyes[5].road && this.eyes[6].road) {
             car.forward();
         } else {
-            if (!this.eyes[0] || !this.eyes[1] || !this.eyes[2]) {
+            if (!this.eyes[0].road || !this.eyes[1].road || !this.eyes[2].road) {
                 car.turnRight();
             }
-            if (!this.eyes[3]) {
+            if (!this.eyes[3].road) {
                 car.reverse();
                 car.turnRight();
             }
-            if (!this.eyes[4] || !this.eyes[5] || !this.eyes[6]) {
+            if (!this.eyes[4].road || !this.eyes[5].road || !this.eyes[6].road) {
                 car.turnLeft();
             }
         }
-
-
     }
 
-    //Holds array for each eye; true if it sees the road
-    this.eyes = [];
+    this.look = function (car, d = 40) {
 
-    this.look = function (car,d=40) {
-        
         let fov = 1.0;
         const eye = fov / 3.0;
 
         let eyeCount = 0;
 
-        for (let i = fov; i > -fov ; i -= eye) {
-            const lookX = (d * Math.cos(car.alfa + i));
-            const lookY = (d * Math.sin(car.alfa + i));
+        for (let i = fov; i > -fov; i -= eye) {
+            const x = (d * Math.cos(car.alfa + i));
+            const y = (d * Math.sin(car.alfa + i));
 
-            this.eyes[eyeCount] = onTheRoad(car.x + lookX, car.y - lookY);
-            c.fillStyle = this.eyes[eyeCount] ? '#0E0' : '#E00';
-            c.fillRect(car.cX + lookX, car.cY - lookY, 3, 3);
-
+            this.eyes[eyeCount] = {
+                x:x,
+                y:y,
+                road:onTheRoad(car.x + x, car.y - y)
+            };
             eyeCount++;
         }
     }
+
+    this.draw = function (c, x, y, a) {
+        this.eyes.forEach(function(eye){
+            c.fillStyle = eye.road ? '#0E0' : '#E00';
+            c.fillRect(x + eye.x, y - eye.y, 3, 3);
+        });
+    }
+
+
+}
+
+
+function AIStateBasedController() {
+    Controller.call(this);
+
+    this.state = 'starting';
+    this.nextAction = false;
+    this.setState = function (state) {
+        if (state !== this.state) {
+            console.log(this.state + '->' + state);
+            this.state = state;
+        }
+    }
+    console.log(this.state);
+
+    this.processInputs = function (car) {
+        let self = this;
+
+        switch (this.state) {
+            case 'starting':
+                car.forward();
+                if (!this.nextAction) {
+                    this.nextAction = 'going-forward';
+                    setTimeout(() => {
+
+                        self.setState(self.nextAction);
+                        self.nextAction = false;
+                    }, 100);
+                }
+
+                break;
+            case 'going-forward':
+                car.forward();
+                break;
+            case 'backing-up':
+                car.reverse();
+                car.turnLeft();
+                if (!this.nextAction) {
+                    this.nextAction = 'starting';
+                    setTimeout(() => {
+
+                        self.setState(self.nextAction);
+                        self.nextAction = false;
+                    }, 500);
+                }
+                break;
+            case 'stopping':
+                car.brake();
+                //prepare to backup if we haven't already.
+                if (!this.nextAction) {
+                    this.nextAction = 'backing-up';
+                    setTimeout(() => {
+
+                        self.setState(self.nextAction);
+                        self.nextAction = false;
+                    }, 500);
+                }
+                break;
+            default:
+                car.forward();
+        }
+        if(car.collision()){
+
+            self.setState('stopping');
+        }
+    }
+
 }
 
 function Controller() {
-    this.processInputs = function () {
+    this.processInputs = function (car) {
         //default controller does nothing
+    }
+    this.draw = function (c,x,y,a,car) {
+        //any graphical rendering the controller wants to do
     }
 }
 
@@ -502,46 +526,27 @@ function frame() {
     // Shadow
     if (playerCar.shadow.length > 0) {
         var shadow = playerCar.shadow.shift();
-        playerCar.reprShadow(c, shadow[0] - trackOffsetX, shadow[1] - trackOffsetY, shadow[2]);
+        playerCar.drawShadow(c, shadow[0] - trackOffsetX, shadow[1] - trackOffsetY, shadow[2]);
     }
 
-    for(let i in game.remoteCars){
+    for (let i in game.remoteCars) {
         const remote = game.remoteCars[i];
         remote.cX = remote.latestPos.x - trackOffsetX;
         remote.cY = remote.latestPos.y - trackOffsetY;
-        remote.repr(c,remote.cX,remote.cY,remote.latestPos.a);
+        remote.draw(c, remote.cX, remote.cY, remote.latestPos.a);
     }
-    game.remoteCars.forEach(function(car){
-        car.cX = car.x - trackOffsetX;
-        car.cY = car.y - trackOffsetY;
-
-        // Draw each car relative to it's position on the canvas
-        car.repr(c, car.cX, car.cY);
-    });
-
     game.cars.forEach(function (car) {
 
         car.cX = car.x - trackOffsetX;
         car.cY = car.y - trackOffsetY;
 
         // Draw each car relative to it's position on the canvas
-        car.repr(c, car.cX, car.cY);
+        car.draw(c, car.cX, car.cY);
 
-        if(car === playerCar && ws){
+        if (car === playerCar && ws) {
             ws.sendPosition(car);
         }
 
-        let d = 40; //sight distance
-        let fov = 1.0;
-        const eye = fov / 3.0;
-
-        for (let i = -fov; i < fov; i += eye) {
-            const lookX = (d * Math.cos(car.alfa + i));
-            const lookY = (d * Math.sin(car.alfa + i));
-
-            c.fillStyle = onTheRoad(car.x + lookX, car.y - lookY) ? '#0E0' : '#E00';
-            c.fillRect(car.cX + lookX, car.cY - lookY, 3, 3);
-        }
     });
 
     if (show === 'game') {
@@ -607,12 +612,6 @@ function loadTrack(id) {
         car.shadow = [];
         car.newShadow = [];
     });
-
-
-    // if (track.name === 'Track 1') {
-    //     //give player 1 a little boost?
-    //     playerCar.maxVelocity += 1;
-    // }
 
     // Remove old img node
     let node = document.getElementById('track');
@@ -771,7 +770,7 @@ function keyHandler(e) {
 
     if ((e.keyCode >= 37 && e.keyCode <= 40) || e.keyCode === 32) {
 
-        const keyCodes = {37: 'LEFT', 38: 'UP', 39: 'RIGHT', 40: 'DOWN', 32: 'SPACE'}
+
         keys[keyCodes[e.keyCode]] = e.type === 'keydown';
         e.preventDefault();
     }
@@ -812,7 +811,7 @@ var tracks = [
 
     trackLoaded1, trackLoaded2, trackLoaded,
     trackImageData,
-
+    keyCodes = {37: 'LEFT', 38: 'UP', 39: 'RIGHT', 40: 'DOWN', 32: 'SPACE'},
     keys = { //pressed status
         'UP': false,
         'DOWN': false,
@@ -838,11 +837,11 @@ let f, fpsTime, fpsElement = document.getElementById('fps');
 
 // Debug
 let debug = false;
-// let playerCar = new Firetruck(0, 0, 0, new AIController());
-// let game = new Game([playerCar, new Car(0, 0, 0, new AIController())]);
+let playerCar = new Firetruck(0, 0, 0, new AIEyeBasedController());
+let game = new Game([playerCar, new Car(0, 0, 0, new AIStateBasedController())]);
 
-let playerCar = new Firetruck(0, 0, 0, new KeyboardControl());
-let game = new Game([playerCar]);
+// let playerCar = new Firetruck(0, 0, 0, new KeyboardControl());
+// let game = new Game([playerCar]);
 
 // Load track
 loadTrack(1);
@@ -877,10 +876,13 @@ setInterval(function () {
 }, 100);
 
 // Debug
-setInterval(function () {
-    if (debug) {
+if (debug) {
+    setInterval(function () {
+
         console.log(playerCar.x + ' ' + playerCar.y + ' ' + onTheRoad(playerCar.x, playerCar.y) + ' ' + playerCar.collision());
-    }
-}, 1000);
+
+    }, 1000);
+}
+
 
 frame();
