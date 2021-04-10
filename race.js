@@ -321,7 +321,7 @@ function AIStateBasedController() {
 
                         self.setState(self.nextAction);
                         self.nextAction = false;
-                    }, 100);
+                    }, 500);
                 }
 
                 break;
@@ -330,14 +330,14 @@ function AIStateBasedController() {
                 break;
             case 'backing-up':
                 car.reverse();
-                car.turnLeft();
+                car.turnRight();
                 if (!this.nextAction) {
                     this.nextAction = 'starting';
                     setTimeout(() => {
 
                         self.setState(self.nextAction);
                         self.nextAction = false;
-                    }, 500);
+                    }, 250);
                 }
                 break;
             case 'stopping':
@@ -355,8 +355,8 @@ function AIStateBasedController() {
             default:
                 car.forward();
         }
-        if(car.collision()){
-
+        if(car.v < -0.2 && this.state === 'going-forward'){
+            //colliding?
             self.setState('stopping');
         }
     }
