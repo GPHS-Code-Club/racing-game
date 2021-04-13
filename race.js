@@ -1,4 +1,4 @@
-console.log('Racing Game \n - game server 1.1 \n - game client 0.19');
+console.log('Racing Game \n - game server 1.1 \n - game client 0.20');
 
 
 let fireTruck = new Image();
@@ -18,9 +18,9 @@ function Firetruck(x, y, alfa, controller) {
     Car.call(this, x, y, alfa, controller)
 
     this.r = 20;//Math.max(this.width,this.height);
-    this.maxVelocity = 1.5;
+    this.maxVelocity = 3;
     this.performance = {
-        friction: 0.97
+        friction: 0.95 //lower is more friction
     };
 
     this.width = fireTruck.width;
@@ -86,9 +86,10 @@ function Car(x, y, alfa, controller) {
     this.alfa = alfa == null ? Math.PI / 2 : alfa;	// Angle
     this.v = 0;					// Velocity
 
+    //@todo move these into performance
     this.v0 = 0.5;				//
     this.a = 1.025;				// Acceleration pixels/frame^2
-    this.maxVelocity = 2;	// Maximum velocity
+    this.maxVelocity = 3;	// Maximum velocity
 
     this.color = '#4A96AD';	// Car's color
     this.r = 10;			// Radius
@@ -295,6 +296,13 @@ function AIEyeBasedController() {
 
 }
 
+function AIUpAndLeftController(){
+    Controller.call(this);
+    this.processInputs = function (car) {
+        car.forward();
+        car.turnLeft();
+    }
+}
 
 function AIStateBasedController() {
     Controller.call(this);
@@ -318,12 +326,10 @@ function AIStateBasedController() {
                 if (!this.nextAction) {
                     this.nextAction = 'going-forward';
                     setTimeout(() => {
-
                         self.setState(self.nextAction);
                         self.nextAction = false;
                     }, 500);
                 }
-
                 break;
             case 'going-forward':
                 car.forward();
@@ -334,7 +340,6 @@ function AIStateBasedController() {
                 if (!this.nextAction) {
                     this.nextAction = 'starting';
                     setTimeout(() => {
-
                         self.setState(self.nextAction);
                         self.nextAction = false;
                     }, 250);
@@ -607,7 +612,7 @@ function loadTrack(id) {
 
     game.cars.forEach(function (car, i) {
         car.x = track.x;
-        car.y = track.y + i * 40;//space them out at the line
+        car.y = track.y-50 + i * 30;//space them out at the line
         car.alfa = track.alfa;
         car.shadow = [];
         car.newShadow = [];
@@ -837,8 +842,14 @@ let f, fpsTime, fpsElement = document.getElementById('fps');
 
 // Debug
 let debug = false;
-let playerCar = new Firetruck(0, 0, 0, new AIEyeBasedController());
-let game = new Game([playerCar, new Car(0, 0, 0, new AIStateBasedController())]);
+let playerCar = new Firetruck(0, 0, 0, new KeyboardControl());
+let game = new Game(
+    [
+        new Car(0, 0, 0, new AIUpAndLeftController()),
+        playerCar,
+        new Car(0, 0, 0, new AIStateBasedController()),
+        new Car(0, 0, 0, new AIEyeBasedController())
+    ]);
 
 // let playerCar = new Firetruck(0, 0, 0, new KeyboardControl());
 // let game = new Game([playerCar]);

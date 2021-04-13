@@ -1,7 +1,10 @@
 let ws;
 function multiplayerConnect() {
 
-    const host = prompt('Server (host:port)','localhost:9100');
+    let host =window.location.host;
+    host = host.substring(0,host.indexOf(':'));
+    host = prompt('Server (host:port)',host+':9100');
+
     ws = new WebSocket('ws://'+host+'/');
 
     ws.GAMEID = 0;
@@ -47,6 +50,7 @@ function multiplayerConnect() {
                 a: car.alfa,
             }
         });
+
     }
 
     ws.join = function () {
