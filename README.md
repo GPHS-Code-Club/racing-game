@@ -3,6 +3,28 @@ racing-game
 
 2D racing game written in JavaScript with a html/canvas frontend and Node.js backend.
 
+## Getting Started
+1. Make sure you have [node.js](https://nodejs.org/en/download/) installed and that these commands work.
+````   
+    node -v
+    npm -v
+````
+2. Clone this repository
+3. In the main folder run
+````
+    npm install
+````
+4. Start the web and game server
+````
+    ./start.sh
+````
+or directly run these two commands
+````
+    http-server -p 9000 -s
+    node server/server.js
+````
+5. Go to http://localhost:9000 to play.
+
 ### Todo
 1. Synchronized start of game 
 1. Synchronized end of game (1st, 2nd, 3rd place)
@@ -11,9 +33,7 @@ racing-game
 1. Improved Lobby
     1. Create a game
     2. Join a game from a list or code
-        3. Enter Name, Vehicle
-1. Allow server.js to serve up website assets as well so everything can optionally be self-contained. (keep the html only version)
-
+        3. Enter Name, Pick Vehicle
     
 
 

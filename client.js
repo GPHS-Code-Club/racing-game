@@ -1,16 +1,24 @@
 let ws;
+
 function multiplayerConnect() {
+    //Ensure we only have one connection going at a time
+    if (ws) {
+        $.toast({text:'Closing old connection...',color:'blue',position:'top-left',hideAfter: 4000});
+        //Close the old connection
+        ws.close();
+    }
 
-    let host =window.location.host;
-    host = host.substring(0,host.indexOf(':'));
-    host = prompt('Server (host:port)',host+':9100');
+    let host = window.location.host;
+    //Use the url of this server as the default, replace http port :9000 with web socket port :9100
+    host = prompt('Server (host:port)', host.substring(0, host.indexOf(':')) + ':9100');
 
-    ws = new WebSocket('ws://'+host+'/');
+    ws = new WebSocket('ws://' + host + '/');
 
     ws.GAMEID = 0;
     ws.PLAYERID = 0;
 
     ws.onopen = function () {
+        $.toast({text:'CONNECTED',position:'top-left',hideAfter: 5000});
         console.log('WebSocket Client Connected To Server');
         ws.join();
     }
@@ -24,12 +32,14 @@ function multiplayerConnect() {
                 ws.GAMEID = m.d.gid;
                 ws.PLAYERID = m.d.pid;
                 playerCar.PLAYERID = ws.PLAYERID;
-                console.log("Joined Game ID:" + ws.GAMEID + ' as player #' + ws.PLAYERID);
+                const notice = "Joined Game ID:" + ws.GAMEID + ' as player #' + ws.PLAYERID;
+                console.log(notice);
+                $.toast({text:notice,position:'top-left'});
                 break;
             case 'P'://position update from a remote player
                 //create the car if we haven't seen it before
-                if (!game.remoteCars.hasOwnProperty(m.d.playerId)){
-                    game.remoteCars[m.d.playerId] =new RemoteCar(0,0,0,new Controller());
+                if (!game.remoteCars.hasOwnProperty(m.d.playerId)) {
+                    game.remoteCars[m.d.playerId] = new RemoteCar(0, 0, 0, new Controller());
                 }
                 game.remoteCars[m.d.playerId].latestPos = m.d;
                 break;
@@ -54,7 +64,7 @@ function multiplayerConnect() {
     }
 
     ws.join = function () {
-        const name = prompt('Connected, what\'s your name?', 'Guest-' + Math.floor(Math.random() * 10) + 1);
+        const name = prompt('What\'s your name?', 'Guest-' + Math.floor(Math.random() * 10) + 1);
         this.sendJSON({t: 'J', d: {name: name, vehicle: 'firetruck'}})
     }
 
@@ -67,7 +77,7 @@ function multiplayerConnect() {
     }
 
     ws.onerror = function (error) {
-        alert('CONNECTION TO GAME SERVER FAILED\nPlaying Locally Only');
+        $.toast({text:'CONNECTION TO GAME SERVER FAILED\nPlaying Locally Only',position:'top-left',color:'red'});
         console.log('WebSocket connection failed:' + error);
         // This means the connection failed.
         console.log(ws.readyState); // 3 - CLOSED (probably from 0)
@@ -76,7 +86,13 @@ function multiplayerConnect() {
     }
 
     ws.onclose = function () {
-        alert('DISCONNECTED');
+        $.toast({
+            text: 'Game Server Connection CLOSED',
+            showHideTransition: 'slide',
+            bgColor: 'blue',
+            hideAfter: 2000,
+
+        });
         console.log('WebSocket connection closed.');
         // This means the connection closed.
         console.log(ws.readyState); // 3 - CLOSED

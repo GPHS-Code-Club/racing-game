@@ -6,7 +6,6 @@
 const Game = require('./Game');
 const http = require('http');
 const readline = require('readline');
-const WebSocketConnection = require("websocket");
 const WebSocketServer = require('websocket').server;
 
 const server = http.createServer();
