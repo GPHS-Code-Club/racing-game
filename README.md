@@ -25,7 +25,14 @@ or directly run these two commands
 ````
 5. Go to http://localhost:9000 to play.
 
+## Code Orientation
+* /race.js holds all of client side game logic
+* /client.js holds all of the multiplayer client code
+* The /server folder contains code related to the multiplayer game engine
+    * /server/server.js is the starting point.
+    
 ### Todo
+These are some things that will be implemented next.
 1. Synchronized start of game 
 1. Synchronized end of game (1st, 2nd, 3rd place)
 1. Position all cars at start
