@@ -1,4 +1,4 @@
-console.log('Racing Game \n - game server 1.1 \n - game client 0.20');
+console.log('Racing Game \n - game server 1.2 \n - game client 0.21');
 
 
 let fireTruck = new Image();
@@ -16,6 +16,10 @@ function Game(cars, track) {
 function Firetruck(x, y, alfa, controller) {
     //Is a car
     Car.call(this, x, y, alfa, controller)
+
+    this.color = '#A33';	// Car's color
+    this.playerNum = '1';
+
 
     this.r = 20;//Math.max(this.width,this.height);
     this.maxVelocity = 3;
@@ -37,6 +41,15 @@ function Firetruck(x, y, alfa, controller) {
 
         //Draw the canvas
         c.drawImage(fireTruck, fireTruck.dx, fireTruck.dy);
+
+
+        //Draw a number
+        c.fillStyle = 'green';
+        c.fillRect(fireTruck.dx+2, fireTruck.dy+25,16,18);
+
+        c.fillStyle = 'white';
+        c.font = "bold 18px Arial";
+        c.fillText(this.playerNum,fireTruck.dx+10, fireTruck.dy+41);
 
         //Restore the context so that the next set of changes can occur
         c.restore();
@@ -61,15 +74,34 @@ function Firetruck(x, y, alfa, controller) {
     };
 }
 
-function RemoteCar(x, y, alfa, controller) {
+function RemoteCar(x, y, alfa, controller, playerNum) {
     Car.call(this, x, y, alfa, controller)
+    this.playerNum = playerNum;
+
     this.draw = function (c, x, y, alfa) {
-        c.globalAlpha = 0.5;
-        c.fillStyle = '#900';
-        c.beginPath();
-        c.arc(Math.round(x), Math.round(y), this.r, -1 * Math.PI / 2 - alfa, Math.PI / 2 - alfa);
-        c.fill();
-        c.globalAlpha = 1;
+        //Save the context so that nothing already on the canvas is affected.
+        c.save();
+
+        //Move the canvas to where we want the car to appear
+        c.translate(Math.round(x), Math.round(y));
+        //Rotates the canvas underneath the car
+        c.rotate(-(alfa - Math.PI / 2));
+
+        //Draw the canvas
+        c.drawImage(fireTruck, fireTruck.dx, fireTruck.dy);
+
+
+        //Draw a number
+        c.fillStyle = 'green';
+        c.fillRect(fireTruck.dx+2, fireTruck.dy+25,16,18);
+
+        c.fillStyle = 'white';
+        c.font = "bold 18px Arial";
+        c.fillText(this.playerNum,fireTruck.dx+10, fireTruck.dy+41);
+
+        //Restore the context so that the next set of changes can occur
+        c.restore();
+        this.controller.draw(c, x, y);
     }
 }
 
@@ -250,19 +282,30 @@ function AIEyeBasedController() {
 
         this.look(car);
 
+
         if (this.eyes[0].road && this.eyes[1].road && this.eyes[2].road && this.eyes[3].road && this.eyes[4].road && this.eyes[5].road && this.eyes[6].road) {
+            //don't see anything
             car.forward();
         } else {
-            if (!this.eyes[0].road || !this.eyes[1].road || !this.eyes[2].road) {
-                car.turnRight();
-            }
-            if (!this.eyes[3].road) {
-                car.reverse();
-                car.turnRight();
-            }
-            if (!this.eyes[4].road || !this.eyes[5].road || !this.eyes[6].road) {
+            if (!this.eyes[0].road && this.eyes[1].road) {
+                //sweet spot
+                car.forward();
+            } else if (!this.eyes[0].road && !this.eyes[1].road) {
+                car.turnRight();}
+            else if (this.eyes[0].road){
+                //we want to keep to the left side
                 car.turnLeft();
+
+            } else if (!this.eyes[3].road) {
+                car.turnRight();
+            } else if (!this.eyes[6].road) {
+                //wrong side of road
+                car.turnRight();
+            } else {
+                car.forward();
             }
+
+
         }
     }
 
@@ -278,16 +321,16 @@ function AIEyeBasedController() {
             const y = (d * Math.sin(car.alfa + i));
 
             this.eyes[eyeCount] = {
-                x:x,
-                y:y,
-                road:onTheRoad(car.x + x, car.y - y)
+                x: x,
+                y: y,
+                road: onTheRoad(car.x + x, car.y - y)
             };
             eyeCount++;
         }
     }
 
     this.draw = function (c, x, y, a) {
-        this.eyes.forEach(function(eye){
+        this.eyes.forEach(function (eye) {
             c.fillStyle = eye.road ? '#0E0' : '#E00';
             c.fillRect(x + eye.x, y - eye.y, 3, 3);
         });
@@ -296,7 +339,7 @@ function AIEyeBasedController() {
 
 }
 
-function AIUpAndLeftController(){
+function AIUpAndLeftController() {
     Controller.call(this);
     this.processInputs = function (car) {
         car.forward();
@@ -311,11 +354,11 @@ function AIStateBasedController() {
     this.nextAction = false;
     this.setState = function (state) {
         if (state !== this.state) {
-            console.log(this.state + '->' + state);
+            //console.log(this.state + '->' + state);
             this.state = state;
         }
     }
-    console.log(this.state);
+    //console.log(this.state);
 
     this.processInputs = function (car) {
         let self = this;
@@ -360,7 +403,7 @@ function AIStateBasedController() {
             default:
                 car.forward();
         }
-        if(car.v < -0.2 && this.state === 'going-forward'){
+        if (car.v < -0.2 && this.state === 'going-forward') {
             //colliding?
             self.setState('stopping');
         }
@@ -372,7 +415,7 @@ function Controller() {
     this.processInputs = function (car) {
         //default controller does nothing
     }
-    this.draw = function (c,x,y,a,car) {
+    this.draw = function (c, x, y, a, car) {
         //any graphical rendering the controller wants to do
     }
 }
@@ -612,7 +655,7 @@ function loadTrack(id) {
 
     game.cars.forEach(function (car, i) {
         car.x = track.x;
-        car.y = track.y-50 + i * 30;//space them out at the line
+        car.y = track.y - 50 + i * 30;//space them out at the line
         car.alfa = track.alfa;
         car.shadow = [];
         car.newShadow = [];

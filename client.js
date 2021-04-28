@@ -31,15 +31,19 @@ function multiplayerConnect() {
             case 'JOINED':
                 ws.GAMEID = m.d.gid;
                 ws.PLAYERID = m.d.pid;
+                ws.NUMBER = m.d.n;
                 playerCar.PLAYERID = ws.PLAYERID;
-                const notice = "Joined Game ID:" + ws.GAMEID + ' as player #' + ws.PLAYERID;
+                playerCar.playerNum = ws.NUMBER;
+                const notice = "Joined Game ID:" + ws.GAMEID + ' as player #' + ws.NUMBER +' id:' + ws.PLAYERID;
+
                 console.log(notice);
+                console.log(m.d);
                 $.toast({text:notice,position:'top-left'});
                 break;
             case 'P'://position update from a remote player
                 //create the car if we haven't seen it before
                 if (!game.remoteCars.hasOwnProperty(m.d.playerId)) {
-                    game.remoteCars[m.d.playerId] = new RemoteCar(0, 0, 0, new Controller());
+                    game.remoteCars[m.d.playerId] = new RemoteCar(0, 0, 0, new Controller(),m.d.playerNum);
                 }
                 game.remoteCars[m.d.playerId].latestPos = m.d;
                 break;

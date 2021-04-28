@@ -14,11 +14,11 @@ racing-game
 ````
     npm install
 ````
-4. Start the web and game server
+4. Start the web and multiplayer game server
 ````
     ./start.sh
 ````
-or directly run these two commands
+or directly run these two commands 
 ````
     http-server -p 9000 -s
     node server/server.js
@@ -33,14 +33,16 @@ or directly run these two commands
     
 ### Todo
 These are some things that will be implemented next.
+1. Show names and appropriate vehicle for remote cars
 1. Synchronized start of game 
 1. Synchronized end of game (1st, 2nd, 3rd place)
 1. Position all cars at start
-1. Show names and appropriate vehicle for remote cars
 1. Improved Lobby
     1. Create a game
     2. Join a game from a list or code
         3. Enter Name, Pick Vehicle
+1. Improved networking
+    1. Look at switching from json to a binary implementation
     
 
 

@@ -10,6 +10,12 @@ module.exports = class Player {
     name;
 
     /**
+     * The Player # in the game
+     * @type {string}
+     */
+    number;
+
+    /**
      * The Vehicle Type
      * @todo expand to class?
      * @type {string}

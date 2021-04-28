@@ -37,9 +37,12 @@ module.exports = class Game extends EventEmitter {
 
     /**
      * First player is in control of the game
+     *
      * @type {Player[]}
      */
     players = [];
+
+
 
     constructor() {
         super();
@@ -74,6 +77,7 @@ module.exports = class Game extends EventEmitter {
 
         //don't exceed max players
         if (this.playerCount() < this.maxPlayers) {
+            player.number=this.playerCount()+1;
             this.players[player.id] = player;
             return true;
         }else{

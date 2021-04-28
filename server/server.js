@@ -7,6 +7,7 @@ const Game = require('./Game');
 const http = require('http');
 const readline = require('readline');
 const WebSocketServer = require('websocket').server;
+const prettyBytes = require('pretty-bytes');
 
 const server = http.createServer();
 
@@ -34,14 +35,21 @@ wsServer.on('request', function (request) {
     const connection = request.accept(null, request.origin);
 
     connection.sendJSON = function (m) {
+        const out = JSON.stringify(m);
         mps.out++;
         mps.total_out++;
-        connection.send(JSON.stringify(m));
+        mps.bytesOut += out.length;
+        mps.total_bytesOut += out.length;
+
+        connection.send(out);
     }
 
     connection.on('message', function (message) {
         mps.in++;
         mps.total_in++;
+        mps.bytesIn += message.utf8Data.length;
+        mps.total_bytesIn += message.utf8Data.length;
+
         const m = JSON.parse(message.utf8Data);
 
         switch (m.t) {
@@ -60,7 +68,8 @@ wsServer.on('request', function (request) {
                 player.connection = this;
                 player.ip = this.remoteAddress;
                 player.game = games[0];
-                games[0].players[player.id] = player;
+
+                games[0].join(player);
 
                 log('JOINED:' + player.name + ' added to game ' + player.game.id);
 
@@ -69,7 +78,8 @@ wsServer.on('request', function (request) {
                         t: 'JOINED',
                         d: {
                             gid: games[0].id,
-                            pid: player.id
+                            pid: player.id,
+                            n:player.number
                         }
                     }
                 );
@@ -85,6 +95,7 @@ wsServer.on('request', function (request) {
 
                 //Annotate the position update with our playerId
                 m.d.playerId = player.id;
+                m.d.playerNum = player.number;
 
                 //Tell the other player's about the position
                 for (let i in games[0].players) {
@@ -127,16 +138,14 @@ setInterval(() => {
     //console.table(games);
 
     if (games[0] && games[0].playerCount() > 0) {
-        console.log('PLAYERS');
+        console.log('CONNECTED PLAYERS');
         console.table(games[0].players);
     } else {
         log('No Games or Players yet...waiting for connections...');
     }
-    console.log('PERFORMANCE');
+    console.log('NETWORK PERFORMANCE');
     console.table(renderMps());
     writeLog();
-
-
 }, 1000);
 
 let outputLog = [];
@@ -175,7 +184,12 @@ function writeLog() {
  * Track the number of messages we process per second
  *
  */
-let mps = {in: 0, out: 0, total_in: 0, total_out: 0};
+let mps = {
+    in: 0, bytesIn: 0,
+    out: 0, bytesOut: 0,
+    total_in: 0, total_bytesIn: 0,
+    total_out: 0, total_bytesOut: 0
+};
 let mpsTime = (new Date()).getTime();
 
 function renderMps() {
@@ -191,12 +205,18 @@ function renderMps() {
             received: Math.floor(mps.in / elapsed),
             sent: Math.floor(mps.out / elapsed)
         },
-
+        'net traffic total': {
+            received:prettyBytes(mps.total_bytesIn),
+            sent: prettyBytes(mps.total_bytesOut)
+        },
+        'net traffic': {
+            received: prettyBytes(Math.floor(mps.bytesIn / elapsed))+'/s',
+            sent: prettyBytes(Math.floor(mps.bytesOut / elapsed))+'/s'
+        }
     };
 
     if ((new Date()).getTime() - mpsTime > 5000) { //5 second average?
-        mps.in = 0;
-        mps.out = 0;
+        mps.in = mps.out = mps.bytesIn = mps.bytesOut = 0;
         mpsTime = curTime;
     }
     return data;
